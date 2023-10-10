@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    name: Format Check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Rust and rustfmt
+        run: |
+          rustup toolchain add nightly --no-self-update
+          rustup default nightly
+          rustup component add rustfmt
+
+      - name: Format Check
+        run: |
+          cargo fmt --all --check
+
+  test:
+    strategy:
+      matrix:
+        target:
+          - aarch64-unknown-linux-gnu
+          - aarch64_be-unknown-linux-gnu
+          - x86_64-unknown-linux-gnu
+        os:
+          - ubuntu-22.04
+          - ubuntu-20.04
+        include:
+          # MacOS
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          # Windows
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    name: Build & Test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        run: |
+          rustup toolchain add nightly --no-self-update
+          rustup default nightly
+
+      - name: Build
+        run: |
+          cargo build
+
+      - name: Test
+        run: |
+          cargo test
+

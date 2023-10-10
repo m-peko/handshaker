@@ -1,0 +1,11 @@
+[package]
+name = "handshaker"
+version = "0.1.0"
+edition = "2021"
+authors = ["Marin Peko <marinpeko5@gmail.com>"]
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.4.6", features = ["derive"] }
+tokio = { version = "1.33.0", features = ["full"] }
+
