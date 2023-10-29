@@ -1,6 +1,7 @@
 use super::{
     Codec,
     CodecError,
+    ReadBytes,
 };
 
 use std::net::{
@@ -52,8 +53,6 @@ impl NetworkAddress {
 }
 
 impl Codec for NetworkAddress {
-    const MIN_REQUIRED_LENGTH: usize = 26;
-
     fn encode(&self) -> Vec<u8> {
         let mut data = Vec::<u8>::new();
         let mut services_data = self.services.encode();
@@ -64,22 +63,13 @@ impl Codec for NetworkAddress {
     }
 
     fn decode(data: &mut &[u8]) -> Result<Self, CodecError> {
-        if data.len() < Self::MIN_REQUIRED_LENGTH {
-            return Err(CodecError::InsufficientBytesError);
-        }
-
         let services = Services::decode(data)?;
-
-        let address: [u8; IP_ADDRESS_LENGTH] =
-            data[..IP_ADDRESS_LENGTH].try_into().unwrap();
-        *data = &data[IP_ADDRESS_LENGTH..];
-
-        let port =
-            u16::from_be_bytes(data[..std::mem::size_of::<u16>()].try_into().unwrap());
-        *data = &data[std::mem::size_of::<u16>()..];
-
-        println!("{}", data.len());
-
+        let address = data
+            .read_fixed::<IP_ADDRESS_LENGTH>()
+            .ok_or(CodecError::InsufficientBytesError)?;
+        let port = data
+            .read_be::<u16>()
+            .ok_or(CodecError::InsufficientBytesError)?;
         Ok(Self {
             services,
             address,
@@ -149,4 +139,3 @@ mod tests {
         assert!(!data.is_empty());
     }
 }
-

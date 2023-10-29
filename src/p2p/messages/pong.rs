@@ -1,6 +1,7 @@
 use super::{
     Codec,
     CodecError,
+    ReadBytes,
 };
 
 /// Pong message is sent in response to a Ping message.
@@ -22,21 +23,14 @@ impl PongMessage {
 }
 
 impl Codec for PongMessage {
-    const MIN_REQUIRED_LENGTH: usize = 8;
-
     fn encode(&self) -> Vec<u8> {
         self.nonce.to_le_bytes().to_vec()
     }
 
     fn decode(data: &mut &[u8]) -> Result<Self, CodecError> {
-        if data.len() < Self::MIN_REQUIRED_LENGTH {
-            return Err(CodecError::InsufficientBytesError);
-        }
-
-        let nonce =
-            u64::from_le_bytes(data[..std::mem::size_of::<u64>()].try_into().unwrap());
-        *data = &data[std::mem::size_of::<u64>()..];
-
+        let nonce = data
+            .read_le::<u64>()
+            .ok_or(CodecError::InsufficientBytesError)?;
         Ok(Self { nonce })
     }
 }

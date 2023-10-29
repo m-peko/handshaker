@@ -1,11 +1,7 @@
 use super::{
     Codec,
     CodecError,
-};
-
-use std::net::{
-    IpAddr,
-    SocketAddr,
+    ReadBytes,
 };
 
 use strum::{
@@ -29,7 +25,7 @@ pub enum Service {
 }
 
 impl Service {
-    pub fn as_u64(self) -> u64 {
+    fn as_u64(self) -> u64 {
         self as u64
     }
 }
@@ -72,21 +68,14 @@ impl From<u64> for Services {
 }
 
 impl Codec for Services {
-    const MIN_REQUIRED_LENGTH: usize = 8;
-
     fn encode(&self) -> Vec<u8> {
         self.services.to_le_bytes().to_vec()
     }
 
     fn decode(data: &mut &[u8]) -> Result<Self, CodecError> {
-        if data.len() < Self::MIN_REQUIRED_LENGTH {
-            return Err(CodecError::InsufficientBytesError);
-        }
-
-        let services =
-            u64::from_le_bytes(data[..std::mem::size_of::<u64>()].try_into().unwrap());
-        *data = &data[std::mem::size_of::<u64>()..];
-
+        let services = data
+            .read_le::<u64>()
+            .ok_or(CodecError::InsufficientBytesError)?;
         Ok(Self { services })
     }
 }
@@ -116,7 +105,8 @@ mod tests {
 
     #[test]
     fn encode() {
-        let services = Services::new(&[Service::Network, Service::Bloom, Service::Witness]);
+        let services =
+            Services::new(&[Service::Network, Service::Bloom, Service::Witness]);
         assert_eq!(services.encode(), RAW_SERVICES);
     }
 
@@ -143,4 +133,3 @@ mod tests {
         assert!(!data.is_empty());
     }
 }
-

@@ -1,6 +1,7 @@
 use super::{
     Codec,
     CodecError,
+    ReadBytes,
 };
 
 use crate::p2p::{
@@ -85,18 +86,9 @@ impl VersionMessage {
     }
 }
 
-impl VersionMessage {
-    /// Minimum length in bytes when version < 106
-    const MIN_REQUIRED_LENGTH_VERSION_LT_106: usize = 46;
-    /// Minimum length in bytes when version < 70001
-    const MIN_REQUIRED_LENGTH_VERSION_LT_70001: usize = 85;
-}
-
 impl Codec for VersionMessage {
-    const MIN_REQUIRED_LENGTH: usize = 86;
-
     fn encode(&self) -> Vec<u8> {
-        let mut data = Vec::<u8>::with_capacity(Self::MIN_REQUIRED_LENGTH);
+        let mut data = Vec::<u8>::new();
         data.extend_from_slice(&self.version.to_le_bytes());
 
         let mut services_data = self.services.encode();
@@ -131,31 +123,13 @@ impl Codec for VersionMessage {
     }
 
     fn decode(data: &mut &[u8]) -> Result<Self, CodecError> {
-        if data.len() < std::mem::size_of::<i32>() {
-            return Err(CodecError::InsufficientBytesError);
-        }
-
-        let version =
-            i32::from_le_bytes(data[..std::mem::size_of::<i32>()].try_into().unwrap());
-
-        if version < 106 && data.len() < Self::MIN_REQUIRED_LENGTH_VERSION_LT_106 {
-            return Err(CodecError::InsufficientBytesError);
-        } else if version >= 106
-            && version < 70001
-            && data.len() < Self::MIN_REQUIRED_LENGTH_VERSION_LT_70001
-        {
-            return Err(CodecError::InsufficientBytesError);
-        } else if version >= 70001 && data.len() < Self::MIN_REQUIRED_LENGTH {
-            return Err(CodecError::InsufficientBytesError);
-        }
-
-        *data = &data[std::mem::size_of::<i32>()..];
-
+        let version = data
+            .read_le::<i32>()
+            .ok_or(CodecError::InsufficientBytesError)?;
         let services = Services::decode(data)?;
-        let timestamp =
-            i64::from_le_bytes(data[..std::mem::size_of::<i64>()].try_into().unwrap());
-        *data = &data[std::mem::size_of::<i64>()..];
-
+        let timestamp = data
+            .read_le::<i64>()
+            .ok_or(CodecError::InsufficientBytesError)?;
         let receiver = NetworkAddress::decode(data)?;
 
         if version < 106 {
@@ -173,24 +147,24 @@ impl Codec for VersionMessage {
         }
 
         let sender = NetworkAddress::decode(data)?;
-        let nonce =
-            u64::from_be_bytes(data[..std::mem::size_of::<u64>()].try_into().unwrap());
-        *data = &data[std::mem::size_of::<u64>()..];
-
-        let user_agent_length =
-            u8::from_be_bytes(data[..std::mem::size_of::<u8>()].try_into().unwrap());
-        *data = &data[std::mem::size_of::<u8>()..];
+        let nonce = data
+            .read_be::<u64>()
+            .ok_or(CodecError::InsufficientBytesError)?;
+        let user_agent_length = data
+            .read_be::<u8>()
+            .ok_or(CodecError::InsufficientBytesError)?;
 
         let mut user_agent = String::new();
         if user_agent_length != 0 {
-            let user_agent_bytes = &data[0..user_agent_length as usize];
-            user_agent = std::str::from_utf8(user_agent_bytes).unwrap().to_string();
-            *data = &data[user_agent_length as usize..];
+            let user_agent_data = data
+                .read_slice(user_agent_length as usize)
+                .ok_or(CodecError::InsufficientBytesError)?;
+            user_agent = std::str::from_utf8(user_agent_data).unwrap().to_string();
         }
 
-        let start_height =
-            i32::from_le_bytes(data[..std::mem::size_of::<i32>()].try_into().unwrap());
-        *data = &data[std::mem::size_of::<i32>()..];
+        let start_height = data
+            .read_le::<i32>()
+            .ok_or(CodecError::InsufficientBytesError)?;
 
         if version < 70001 {
             return Ok(Self {
@@ -206,8 +180,10 @@ impl Codec for VersionMessage {
             });
         }
 
-        let relay = data[0] == 1;
-        *data = &data[1..];
+        let relay = data
+            .read_le::<u8>()
+            .ok_or(CodecError::InsufficientBytesError)?
+            == 0x01;
 
         Ok(Self {
             version,

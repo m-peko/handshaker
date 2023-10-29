@@ -10,8 +10,6 @@ use super::{
 pub struct VerackMessage {}
 
 impl Codec for VerackMessage {
-    const MIN_REQUIRED_LENGTH: usize = 0;
-
     fn encode(&self) -> Vec<u8> {
         Vec::<u8>::new()
     }
