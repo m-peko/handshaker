@@ -270,7 +270,7 @@ mod tests {
 
     #[test]
     fn encode() {
-        let header = MessageHeader{
+        let header = MessageHeader {
             network: Network::Main,
             command: Command::Version,
             length: 100,

@@ -5,11 +5,11 @@ use super::{
 };
 
 use crate::p2p::{
-    config::NodeConfig,
     messages::{
         NetworkAddress,
         Services,
     },
+    NodeConfig,
 };
 
 use std::{
