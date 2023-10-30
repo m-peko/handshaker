@@ -1,8 +1,11 @@
+use sha2::{
+    Digest,
+    Sha256,
+};
 use std::fmt::{
     Display,
     Formatter,
 };
-
 use strum::{
     EnumIter,
     IntoEnumIterator,
@@ -246,6 +249,33 @@ impl Codec for MessageHeader {
             checksum,
         })
     }
+}
+
+pub fn calculate_checksum(data: &[u8]) -> u32 {
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    let mut result = hasher.finalize_reset();
+
+    hasher.update(result);
+    result = hasher.finalize();
+
+    u32::from_le_bytes(result[..std::mem::size_of::<u32>()].try_into().unwrap())
+}
+
+pub fn compose(command: Command, payload: impl Codec) -> Vec<u8> {
+    let payload_data = payload.encode();
+    let header = MessageHeader {
+        network: Network::Main,
+        command,
+        length: payload_data.len() as u32,
+        checksum: calculate_checksum(&payload_data[..]),
+    }
+    .encode();
+
+    let mut data = Vec::<u8>::new();
+    data.extend(header);
+    data.extend(payload_data);
+    data
 }
 
 #[cfg(test)]

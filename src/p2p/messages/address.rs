@@ -55,8 +55,8 @@ impl NetworkAddress {
 impl Codec for NetworkAddress {
     fn encode(&self) -> Vec<u8> {
         let mut data = Vec::<u8>::new();
-        let mut services_data = self.services.encode();
-        data.append(&mut services_data);
+        let services_data = self.services.encode();
+        data.extend(services_data);
         data.extend_from_slice(&self.address);
         data.extend_from_slice(&self.port.to_be_bytes());
         data

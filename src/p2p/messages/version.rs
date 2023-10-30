@@ -91,19 +91,19 @@ impl Codec for VersionMessage {
         let mut data = Vec::<u8>::new();
         data.extend_from_slice(&self.version.to_le_bytes());
 
-        let mut services_data = self.services.encode();
-        data.append(&mut services_data);
+        let services_data = self.services.encode();
+        data.extend(services_data);
         data.extend_from_slice(&self.timestamp.to_le_bytes());
 
-        let mut to_net_address_data = self.receiver.encode();
-        data.append(&mut to_net_address_data);
+        let to_net_address_data = self.receiver.encode();
+        data.extend(to_net_address_data);
 
         if self.version < 106 {
             return data;
         }
 
-        let mut from_net_address_data = self.sender.encode();
-        data.append(&mut from_net_address_data);
+        let from_net_address_data = self.sender.encode();
+        data.extend(from_net_address_data);
         data.extend_from_slice(&self.nonce.to_be_bytes());
 
         // Encode user agent (byte indicating field length + string)
