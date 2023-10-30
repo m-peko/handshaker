@@ -100,7 +100,7 @@ impl ReadBytes for &[u8] {
     }
 }
 
-trait Codec {
+pub trait Codec {
     /// Encodes an object of a specific type into a stream of bytes in
     /// network byte order, i.e big-endian.
     fn encode(&self) -> Vec<u8>;
