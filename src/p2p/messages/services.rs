@@ -4,6 +4,11 @@ use super::{
     ReadBytes,
 };
 
+use std::fmt::{
+    Display,
+    Formatter,
+};
+
 use strum::{
     EnumIter,
     IntoEnumIterator,
@@ -27,6 +32,20 @@ pub enum Service {
 impl Service {
     fn as_u64(self) -> u64 {
         self as u64
+    }
+}
+
+impl Display for Service {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Service::Network => write!(f, "Network"),
+            Service::Getutx => write!(f, "Getutx"),
+            Service::Bloom => write!(f, "Bloom"),
+            Service::Witness => write!(f, "Witness"),
+            Service::Xthin => write!(f, "Xthin"),
+            Service::CompactFilters => write!(f, "CompactFilters"),
+            Service::NetworkLimited => write!(f, "NetworkLimited"),
+        }
     }
 }
 
@@ -64,6 +83,26 @@ impl Services {
 impl From<u64> for Services {
     fn from(services: u64) -> Self {
         Self { services }
+    }
+}
+
+impl Display for Services {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+
+        let mut first = true;
+        for s in Service::iter() {
+            if self.services & s.as_u64() != 0 {
+                if first {
+                    first = false;
+                } else {
+                    write!(f, ", ")?;
+                }
+                write!(f, "{}", s)?;
+            }
+        }
+
+        write!(f, "]")
     }
 }
 

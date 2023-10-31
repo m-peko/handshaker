@@ -37,8 +37,16 @@ async fn main() {
         info!("Performing a handshake with {}", address);
 
         match timeout(args.timeout, node.handshake(address)).await {
-            Ok(_) => info!("Success"),
-            Err(e) => error!("Error: {}", e),
+            Ok(v) => match v {
+                Ok(node_config) => {
+                    info!("Handshake successfully performed:");
+                    info!("\t{}", node_config);
+                }
+                Err(e) => error!("Error occurred during handshake: {}", e),
+            },
+            Err(e) => {
+                error!("Timeout of {} ms exceeded: {}", args.timeout.as_millis(), e)
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ impl Codec for VerackMessage {
         Vec::<u8>::new()
     }
 
-    fn decode(data: &mut &[u8]) -> Result<Self, CodecError> {
+    fn decode(_data: &mut &[u8]) -> Result<Self, CodecError> {
         Ok(Self {})
     }
 }

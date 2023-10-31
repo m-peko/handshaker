@@ -1,10 +1,11 @@
-use sha2::{
-    Digest,
-    Sha256,
-};
 use std::fmt::{
     Display,
     Formatter,
+};
+
+use sha2::{
+    Digest,
+    Sha256,
 };
 use strum::{
     EnumIter,
@@ -320,5 +321,11 @@ mod tests {
         assert_eq!(header.command, Command::Version);
         assert_eq!(header.length, 100);
         assert_eq!(header.checksum, 0x32498d35);
+    }
+
+    #[test]
+    fn checksum() {
+        let checksum = calculate_checksum(&[]);
+        assert_eq!(checksum, 0xe2e0f65d);
     }
 }

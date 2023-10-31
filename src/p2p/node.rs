@@ -1,6 +1,12 @@
-use std::net::{
-    SocketAddr,
-    SocketAddrV4,
+use std::{
+    fmt::{
+        Display,
+        Formatter,
+    },
+    net::{
+        SocketAddr,
+        SocketAddrV4,
+    },
 };
 
 use log::{
@@ -53,6 +59,16 @@ impl Default for NodeConfig {
             start_height: 0,
             relay: false,
         }
+    }
+}
+
+impl Display for NodeConfig {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "version: {}", self.version)?;
+        write!(f, "services: {}", self.services)?;
+        write!(f, "user agent: {}", self.user_agent)?;
+        write!(f, "start height: {}", self.start_height)?;
+        write!(f, "relay: {}", self.relay)
     }
 }
 
@@ -114,6 +130,10 @@ impl Node {
 
                     let checksum = calculate_checksum(data);
                     if checksum != header.checksum {
+                        error!(
+                            "Connection error: Checksum mismatch {} vs. {}",
+                            checksum, header.checksum
+                        );
                         return Err(ConnectionError::InvalidDataError);
                     }
 
@@ -155,10 +175,10 @@ impl Node {
                         Command::Ping => {
                             info!("Connection: Received Ping, sending out Pong message");
 
-                            // send Pong message
-                            let msg = VersionMessage::decode(&mut data)
+                            let msg = PingMessage::decode(&mut data)
                                 .map_err(|_| ConnectionError::InvalidDataError)?;
 
+                            // send Pong message
                             let pong_data =
                                 compose(Command::Pong, PongMessage::new(msg.nonce()));
                             socket
