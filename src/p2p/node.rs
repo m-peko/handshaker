@@ -219,3 +219,54 @@ impl Node {
         Ok(other_node_config)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::net::Ipv4Addr;
+
+    use testcontainers::{
+        clients::Cli,
+        core::WaitFor,
+        GenericImage,
+    };
+
+    use crate::p2p::messages::{
+        Service,
+        Services,
+    };
+
+    #[tokio::test]
+    async fn perform_handshake() {
+        let docker = Cli::default();
+
+        let image = GenericImage::new("bitcoin-node", "latest")
+            .with_wait_for(WaitFor::seconds(2))
+            .with_exposed_port(18444);
+        let bitcoin_node = docker.run(image);
+        bitcoin_node.start();
+
+        let port = bitcoin_node.get_host_port_ipv4(18444);
+
+        let config = NodeConfig {
+            version: 70015,
+            services: Services::new(&[Service::Network]),
+            user_agent: "test_node".to_string(),
+            start_height: 10,
+            relay: false,
+        };
+        let node = Node::new(config);
+
+        match node
+            .handshake(
+                Network::Testnet,
+                SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port),
+            )
+            .await
+        {
+            Ok(_) => assert!(true),
+            Err(e) => assert!(false, "Unsuccessful handshake: {}", e),
+        }
+    }
+}

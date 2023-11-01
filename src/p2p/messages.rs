@@ -148,18 +148,12 @@ pub enum Network {
     Namecoin = 0xfe_b4_be_f9,
 }
 
-impl Into<u32> for Network {
-    fn into(self) -> u32 {
-        self as u32
-    }
-}
-
 impl TryFrom<u32> for Network {
     type Error = &'static str;
 
     fn try_from(data: u32) -> Result<Self, Self::Error> {
         for n in Network::iter() {
-            if data == n.into() {
+            if data == n as u32 {
                 return Ok(n);
             }
         }
