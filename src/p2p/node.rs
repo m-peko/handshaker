@@ -12,6 +12,7 @@ use std::{
 use log::{
     error,
     info,
+    warn,
 };
 use tokio::{
     io::{
@@ -26,6 +27,7 @@ use crate::p2p::{
         calculate_checksum,
         compose,
         Codec,
+        CodecError,
         Command,
         MessageHeader,
         Network,
@@ -65,11 +67,11 @@ impl Default for NodeConfig {
 
 impl Display for NodeConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "version: {}", self.version)?;
-        write!(f, "services: {}", self.services)?;
-        write!(f, "user agent: {}", self.user_agent)?;
-        write!(f, "start height: {}", self.start_height)?;
-        write!(f, "relay: {}", self.relay)
+        write!(
+            f,
+            "version: {}, services: {}, user agent: {}, start height: {}, relay: {}",
+            self.version, self.services, self.user_agent, self.start_height, self.relay
+        )
     }
 }
 
@@ -123,12 +125,19 @@ impl Node {
                 0 => return Err(ConnectionError::ConnectionHangUp),
                 n => {
                     let mut data = &buffer[..n];
+
                     let header = match MessageHeader::decode(&mut data) {
                         Ok(v) => v,
-                        Err(e) => {
-                            error!("Connection error: {}", e);
-                            return Err(ConnectionError::InvalidDataError);
-                        }
+                        Err(e) => match e {
+                            CodecError::InvalidBytesError => {
+                                warn!("Connection error: Invalid network or command found, ignore it");
+                                continue;
+                            }
+                            _ => {
+                                error!("Connection error: {}", e);
+                                return Err(ConnectionError::InvalidDataError);
+                            }
+                        },
                     };
 
                     let checksum = calculate_checksum(data);
@@ -139,16 +148,11 @@ impl Node {
                         );
                         return Err(ConnectionError::InvalidDataError);
                     }
-
                     match header.command {
                         Command::Version => {
+                            info!("Connection: Received Version message",);
                             let msg = VersionMessage::decode(&mut data)
                                 .map_err(|_| ConnectionError::InvalidDataError)?;
-
-                            info!(
-                                "Connection: Received Version message from {}",
-                                msg.user_agent
-                            );
 
                             other_node_config.version = msg.version;
                             other_node_config.services = msg.services;
@@ -156,7 +160,10 @@ impl Node {
                             other_node_config.start_height = msg.start_height;
                             other_node_config.relay = msg.relay;
 
-                            // send Verack message
+                            info!(
+                                "Connection: Sending Verack message to {}",
+                                other_node_config.user_agent
+                            );
                             let verack_data =
                                 compose(network, Command::Verack, VerackMessage {});
                             socket
@@ -165,11 +172,8 @@ impl Node {
                                 .map_err(|_| ConnectionError::IOError)?;
                         }
                         Command::Verack => {
-                            info!(
-                                "Connection: Received Verack, sending out Ping message"
-                            );
-
-                            // send Ping message
+                            info!("Connection: Received Verack message");
+                            info!("Connection: Sending Ping message");
                             let ping_data =
                                 compose(network, Command::Ping, PingMessage::new());
                             socket
@@ -178,12 +182,14 @@ impl Node {
                                 .map_err(|_| ConnectionError::IOError)?;
                         }
                         Command::Ping => {
-                            info!("Connection: Received Ping, sending out Pong message");
-
                             let msg = PingMessage::decode(&mut data)
                                 .map_err(|_| ConnectionError::InvalidDataError)?;
+                            info!(
+                                "Connection: Received Ping message with nonce {}",
+                                msg.nonce()
+                            );
 
-                            // send Pong message
+                            info!("Connection: Sending Pong message");
                             let pong_data = compose(
                                 network,
                                 Command::Pong,
@@ -195,7 +201,12 @@ impl Node {
                                 .map_err(|_| ConnectionError::IOError)?;
                         }
                         Command::Pong => {
-                            info!("Connection: Received Pong, handshake successfully performed");
+                            let msg = PongMessage::decode(&mut data)
+                                .map_err(|_| ConnectionError::InvalidDataError)?;
+                            info!(
+                                "Connection: Received Pong message with nonce {}",
+                                msg.nonce()
+                            );
                             break;
                         }
                     }

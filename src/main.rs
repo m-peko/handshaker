@@ -38,10 +38,10 @@ async fn main() {
 
         match timeout(args.timeout, node.handshake(args.network, address)).await {
             Ok(v) => match v {
-                Ok(node_config) => {
-                    info!("Handshake successfully performed:");
-                    info!("\t{}", node_config);
-                }
+                Ok(node_config) => info!(
+                    "Handshake successfully performed, node at {}: {}",
+                    address, node_config
+                ),
                 Err(e) => error!("Error occurred during handshake: {}", e),
             },
             Err(e) => {
