@@ -69,6 +69,7 @@ impl Services {
     }
 
     /// Gets enabled services
+    #[allow(dead_code)]
     pub fn enabled(&self) -> Vec<Service> {
         let mut services = Vec::new();
         for s in Service::iter() {

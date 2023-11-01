@@ -71,16 +71,19 @@ impl VersionMessage {
     }
 
     /// Gets the UNIX timestamp
+    #[allow(dead_code)]
     pub fn timestamp(&self) -> Duration {
         Duration::from_secs(self.timestamp.try_into().unwrap())
     }
 
     /// Gets the receiver's node address
+    #[allow(dead_code)]
     pub fn receiver(&self) -> &NetworkAddress {
         &self.receiver
     }
 
     /// Gets the random nonce
+    #[allow(dead_code)]
     pub fn nonce(&self) -> u64 {
         self.nonce
     }

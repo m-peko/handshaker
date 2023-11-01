@@ -47,6 +47,8 @@ impl NetworkAddress {
         }
     }
 
+    /// Gets socket address from the bytes received
+    #[allow(dead_code)]
     pub fn address(&self) -> SocketAddr {
         SocketAddr::new(IpAddr::from(self.address), self.port)
     }
