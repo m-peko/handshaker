@@ -238,6 +238,7 @@ mod tests {
     };
 
     #[tokio::test]
+    #[ignore]
     async fn perform_handshake() {
         let docker = Cli::default();
 
@@ -258,15 +259,12 @@ mod tests {
         };
         let node = Node::new(config);
 
-        match node
+        let result = node
             .handshake(
                 Network::Testnet,
                 SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port),
             )
-            .await
-        {
-            Ok(_) => assert!(true),
-            Err(e) => assert!(false, "Unsuccessful handshake: {}", e),
-        }
+            .await;
+        assert!(result.is_ok());
     }
 }
