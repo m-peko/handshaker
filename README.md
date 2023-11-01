@@ -51,8 +51,10 @@ docker run -e BTC_CHAIN=main ...
 3. Perform P2P handshake
 
 ```bash
-cargo run 0.0.0.0:18444 -n regtest
+cargo run 0.0.0.0:18444 -n testnet
 ```
+
+_Note: Checksum check might fail sometimes during handshake._
 
 Contribution
 ------------

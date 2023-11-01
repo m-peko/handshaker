@@ -116,7 +116,7 @@ impl Node {
             .map_err(|_| ConnectionError::IOError)?;
 
         loop {
-            let mut buffer = [0; 1024];
+            let mut buffer = [0; 4096];
             match socket
                 .read(&mut buffer)
                 .await
