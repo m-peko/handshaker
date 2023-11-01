@@ -1,4 +1,3 @@
-use clap::Parser;
 use std::{
     fmt::{
         Display,
@@ -8,6 +7,10 @@ use std::{
     num::ParseIntError,
     time::Duration,
 };
+
+use clap::Parser;
+
+use crate::p2p::messages::Network;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -29,6 +32,15 @@ pub struct Arguments {
         help = "Maximum time per message in milliseconds"
     )]
     pub timeout: Duration,
+
+    #[arg(
+        short,
+        long,
+        value_enum,
+        default_value_t = Network::Testnet,
+        help = "Network to be used during handshake"
+    )]
+    pub network: Network,
 }
 
 #[derive(Debug, PartialEq)]

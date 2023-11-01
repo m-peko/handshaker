@@ -3,6 +3,7 @@ use std::fmt::{
     Formatter,
 };
 
+use clap::ValueEnum;
 use sha2::{
     Digest,
     Sha256,
@@ -137,7 +138,7 @@ impl Display for CodecError {
 
 impl std::error::Error for CodecError {}
 
-#[derive(Clone, Copy, Debug, EnumIter, PartialEq)]
+#[derive(Clone, Copy, Debug, EnumIter, PartialEq, ValueEnum)]
 #[repr(u32)]
 pub enum Network {
     Main = 0xd9_b4_be_f9,
@@ -263,10 +264,10 @@ pub fn calculate_checksum(data: &[u8]) -> u32 {
     u32::from_le_bytes(result[..std::mem::size_of::<u32>()].try_into().unwrap())
 }
 
-pub fn compose(command: Command, payload: impl Codec) -> Vec<u8> {
+pub fn compose(network: Network, command: Command, payload: impl Codec) -> Vec<u8> {
     let payload_data = payload.encode();
     let header = MessageHeader {
-        network: Network::Main,
+        network,
         command,
         length: payload_data.len() as u32,
         checksum: calculate_checksum(&payload_data[..]),

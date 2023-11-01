@@ -36,7 +36,7 @@ async fn main() {
     for address in args.addresses {
         info!("Performing a handshake with {}", address);
 
-        match timeout(args.timeout, node.handshake(address)).await {
+        match timeout(args.timeout, node.handshake(args.network, address)).await {
             Ok(v) => match v {
                 Ok(node_config) => {
                     info!("Handshake successfully performed:");

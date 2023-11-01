@@ -28,6 +28,7 @@ use crate::p2p::{
         Codec,
         Command,
         MessageHeader,
+        Network,
         PingMessage,
         PongMessage,
         Services,
@@ -93,6 +94,7 @@ impl Node {
     /// Returns configuration of the node with which the handshake was performed.
     pub async fn handshake(
         &self,
+        network: Network,
         address: SocketAddrV4,
     ) -> Result<NodeConfig, ConnectionError> {
         let mut other_node_config: NodeConfig = Default::default();
@@ -102,6 +104,7 @@ impl Node {
             .map_err(|_| ConnectionError::ConnectionRefusedError)?;
 
         let version_data = compose(
+            network,
             Command::Version,
             VersionMessage::new(SocketAddr::from(address), &self.config),
         );
@@ -154,7 +157,8 @@ impl Node {
                             other_node_config.relay = msg.relay;
 
                             // send Verack message
-                            let verack_data = compose(Command::Verack, VerackMessage {});
+                            let verack_data =
+                                compose(network, Command::Verack, VerackMessage {});
                             socket
                                 .write_all(&verack_data[..])
                                 .await
@@ -166,7 +170,8 @@ impl Node {
                             );
 
                             // send Ping message
-                            let ping_data = compose(Command::Ping, PingMessage::new());
+                            let ping_data =
+                                compose(network, Command::Ping, PingMessage::new());
                             socket
                                 .write_all(&ping_data[..])
                                 .await
@@ -179,8 +184,11 @@ impl Node {
                                 .map_err(|_| ConnectionError::InvalidDataError)?;
 
                             // send Pong message
-                            let pong_data =
-                                compose(Command::Pong, PongMessage::new(msg.nonce()));
+                            let pong_data = compose(
+                                network,
+                                Command::Pong,
+                                PongMessage::new(msg.nonce()),
+                            );
                             socket
                                 .write_all(&pong_data[..])
                                 .await
