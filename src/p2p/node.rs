@@ -130,11 +130,11 @@ impl Node {
                         Ok(v) => v,
                         Err(e) => match e {
                             CodecError::InvalidBytesError => {
-                                warn!("Connection error: Invalid network or command found, ignore it");
+                                warn!("Connection {} error: Invalid network or command found, ignore it", address);
                                 continue;
                             }
                             _ => {
-                                error!("Connection error: {}", e);
+                                error!("Connection {} error: {}", address, e);
                                 return Err(ConnectionError::InvalidDataError);
                             }
                         },
@@ -143,14 +143,14 @@ impl Node {
                     let checksum = calculate_checksum(data);
                     if checksum != header.checksum {
                         error!(
-                            "Connection error: Checksum mismatch {} vs. {}",
-                            checksum, header.checksum
+                            "Connection {} error: Checksum mismatch {} vs. {}",
+                            address, checksum, header.checksum
                         );
                         return Err(ConnectionError::InvalidDataError);
                     }
                     match header.command {
                         Command::Version => {
-                            info!("Connection: Received Version message",);
+                            info!("Connection {}: Received Version message", address);
                             let msg = VersionMessage::decode(&mut data)
                                 .map_err(|_| ConnectionError::InvalidDataError)?;
 
@@ -161,8 +161,8 @@ impl Node {
                             other_node_config.relay = msg.relay;
 
                             info!(
-                                "Connection: Sending Verack message to {}",
-                                other_node_config.user_agent
+                                "Connection {}: Sending Verack message to {}",
+                                address, other_node_config.user_agent
                             );
                             let verack_data =
                                 compose(network, Command::Verack, VerackMessage {});
@@ -172,8 +172,8 @@ impl Node {
                                 .map_err(|_| ConnectionError::IOError)?;
                         }
                         Command::Verack => {
-                            info!("Connection: Received Verack message");
-                            info!("Connection: Sending Ping message");
+                            info!("Connection {}: Received Verack message", address);
+                            info!("Connection {}: Sending Ping message", address);
                             let ping_data =
                                 compose(network, Command::Ping, PingMessage::new());
                             socket
@@ -185,11 +185,12 @@ impl Node {
                             let msg = PingMessage::decode(&mut data)
                                 .map_err(|_| ConnectionError::InvalidDataError)?;
                             info!(
-                                "Connection: Received Ping message with nonce {}",
+                                "Connection {}: Received Ping message with nonce {}",
+                                address,
                                 msg.nonce()
                             );
 
-                            info!("Connection: Sending Pong message");
+                            info!("Connection {}: Sending Pong message", address);
                             let pong_data = compose(
                                 network,
                                 Command::Pong,
@@ -204,7 +205,8 @@ impl Node {
                             let msg = PongMessage::decode(&mut data)
                                 .map_err(|_| ConnectionError::InvalidDataError)?;
                             info!(
-                                "Connection: Received Pong message with nonce {}",
+                                "Connection {}: Received Pong message with nonce {}",
+                                address,
                                 msg.nonce()
                             );
                             break;
